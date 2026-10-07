@@ -23,241 +23,230 @@ import {
   SlidersHorizontal,
   ChartNoAxesCombined,
   BookOpen,
-  MoveUpRight,
   Wind,
   Clock,
   Thermometer,
   ShieldCheck,
 } from "lucide-react";
-import { cities, baseline, presets, simulate } from "./model.js";
+import { cities, cityGeography, baseline, presets, simulate } from "./model.js";
+import * as maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "./style.css";
+import { Protocol } from "pmtiles";
+const buildingProtocol = new Protocol();
+maplibregl.addProtocol("pmtiles", buildingProtocol.tile);
+const buildingArchive = "pmtiles://https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-09-23.1/buildings.pmtiles";
+maplibregl.setWorkerUrl(mapWorkerUrl);
+maplibregl.setWorkerCount(2);
 const fmt = (n, d = 1) => n.toFixed(d);
-function CityCanvas({ policy, layer, running, city }) {
-  const canvas = useRef(null),
-    params = useRef({ policy, layer, running, city });
-  params.current = { policy, layer, running, city };
-  useEffect(() => {
-    let frame,
-      phase = 0;
-    const el = canvas.current,
-      ctx = el.getContext("2d");
-    function render() {
-      const box = el.getBoundingClientRect(),
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
-      if (el.width !== box.width * dpr || el.height !== box.height * dpr) {
-        el.width = box.width * dpr;
-        el.height = box.height * dpr;
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const W = box.width,
-        H = box.height;
-      ctx.clearRect(0, 0, W, H);
-      const { policy: p, layer: l, running: r, city: c } = params.current;
-      phase += window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? 0
-        : r
-          ? 0.014
-          : 0.003;
-      const size = Math.min(W / 21, H / 15),
-        ox = W * 0.5,
-        oy = H * 0.22;
-      const pt = (x, y, z = 0) => [
-        ox + (x - y) * size,
-        oy + (x + y) * size * 0.49 - z,
-      ];
-      const poly = (points, fill, stroke) => {
-        ctx.beginPath();
-        points.forEach((v, i) => (i ? ctx.lineTo(...v) : ctx.moveTo(...v)));
-        ctx.closePath();
-        ctx.fillStyle = fill;
-        ctx.fill();
-        if (stroke) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-        }
-      };
-      const tile = (x, y, w, d, color) =>
-        poly([pt(x, y), pt(x + w, y), pt(x + w, y + d), pt(x, y + d)], color);
-      const line = (a, b, col, width) => {
-        ctx.beginPath();
-        ctx.moveTo(...a);
-        ctx.lineTo(...b);
-        ctx.strokeStyle = col;
-        ctx.lineWidth = width;
-        ctx.stroke();
-      };
-      const building = (x, y, w, d, h, col) => {
-        const a = pt(x, y),
-          b = pt(x + w, y),
-          cc = pt(x + w, y + d),
-          dd = pt(x, y + d);
-        const top = (v) => [v[0], v[1] - h];
-        poly([dd, cc, top(cc), top(dd)], col[1]);
-        poly([b, cc, top(cc), top(b)], col[2]);
-        poly([top(a), top(b), top(cc), top(dd)], col[0], "#ffffff70");
-        for (let z = 8; z < h - 4; z += 9) {
-          line([dd[0] + 3, dd[1] - z], [cc[0] - 3, cc[1] - z], "#ffffff60", 1);
-          line([b[0] + 2, b[1] - z], [cc[0] - 2, cc[1] - z], "#ffffff40", 1);
-        }
-        if ((Math.round(x) * 17 + Math.round(y) * 31) % 100 < p.solar) {
-          poly(
-            [
-              pt(x + 0.08, y + 0.08, h + 1),
-              pt(x + w * 0.85, y + 0.08, h + 1),
-              pt(x + w * 0.85, y + d * 0.65, h + 1),
-              pt(x + 0.08, y + d * 0.65, h + 1),
-            ],
-            "#526f7c",
-          );
-        }
-      };
-      const tree = (x, y, k = 1) => {
-        const a = pt(x, y);
-        line(a, [a[0], a[1] - 12 * k], "#8e9b83", 2);
-        ctx.fillStyle = "#8daa79";
-        ctx.beginPath();
-        ctx.ellipse(a[0], a[1] - 17 * k, 8 * k, 11 * k, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#a1bc8d";
-        ctx.beginPath();
-        ctx.ellipse(
-          a[0] - 2 * k,
-          a[1] - 20 * k,
-          5 * k,
-          7 * k,
-          0,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
-      };
-      ctx.save();
-      ctx.shadowColor = "#273c3020";
-      ctx.shadowBlur = 25;
-      ctx.shadowOffsetY = 20;
-      tile(-0.4, -0.4, 10.8, 10.8, "#e1e7df");
-      ctx.restore();
-      poly(
-        [
-          pt(-0.4, 10.4),
-          pt(10.4, 10.4),
-          pt(10.4, 10.4, -9),
-          pt(-0.4, 10.4, -9),
-        ],
-        "#cfd7cc",
-      );
-      poly(
-        [
-          pt(10.4, -0.4),
-          pt(10.4, 10.4),
-          pt(10.4, 10.4, -9),
-          pt(10.4, -0.4, -9),
-        ],
-        "#d8dfd3",
-      );
-      for (let i = 0; i < 10; i++) {
-        tile(i, 0, 0.23, 10, "#f9faf5");
-        tile(0, i, 10, 0.23, "#f9faf5");
-        if (i === 3 || i === 7) {
-          tile(i, 0, 0.27, 10, "#d0d8d1");
-          tile(0, i, 10, 0.27, "#d0d8d1");
-        }
-      }
-      // A schematic river, not a geographic map.
-      poly(
-        [
-          pt(-0.4, 7.4),
-          pt(2.5, 7.1),
-          pt(4.8, 8.5),
-          pt(7.5, 8.7),
-          pt(10.4, 8),
-          pt(10.4, 8.65),
-          pt(7.5, 9.35),
-          pt(4.6, 9.1),
-          pt(2.4, 7.75),
-          pt(-0.4, 8.05),
-        ],
-        "#b9d5d7",
-      );
-      for (let sum = 0; sum < 19; sum++)
-        for (let x = 0; x < 10; x++) {
-          const y = sum - x;
-          if (
-            y < 0 ||
-            y >= 10 ||
-            x === 3 ||
-            x === 7 ||
-            y === 3 ||
-            y === 7 ||
-            y === 8
-          )
-            continue;
-          const seed = (x * 17 + y * 31 + c.length * 7) % 23,
-            park =
-              seed < p.green / 7 ||
-              ((x === 4 || x === 5) && (y === 4 || y === 5));
-          if (park) {
-            tile(x + 0.25, y + 0.25, 0.7, 0.7, "#c4d5b3");
-            tree(x + 0.47, y + 0.45, 0.85);
-            tree(x + 0.77, y + 0.72, 0.7);
-            continue;
-          }
-          let col = ["#e7e8e1", "#cdd2c9", "#b9c2b8"];
-          if (l === "heat")
-            col =
-              seed % 3 === 0
-                ? ["#e6bea1", "#d9b49c", "#c89c88"]
-                : ["#ead4b4", "#d7c4a8", "#cbb797"];
-          if (l === "energy")
-            col = seed < p.solar / 4 ? ["#b2cbd5", "#a1b9c4", "#8eaab7"] : col;
-          const h =
-            seed % 5 === 0 ? size * 2.1 : size * (0.4 + (seed / 23) * 0.9);
-          building(x + 0.28, y + 0.28, 0.56, 0.56, h, col);
-          if (seed % 4 === 0) tree(x + 0.85, y + 0.4, 0.65);
-        }
-      // Metro/BRT spine and animated transport agents.
-      if (p.transit > 35) {
-        line(pt(3.12, 0.05, 4), pt(3.12, 9.9, 4), "#638c76", 3);
-        for (const y of [1.5, 4.5, 6.5, 9.3]) {
-          const a = pt(3.12, y, 4);
-          ctx.fillStyle = "white";
-          ctx.beginPath();
-          ctx.arc(...a, 4, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = "#638c76";
-          ctx.stroke();
-        }
-      }
-      for (let i = 0; i < 22; i++) {
-        const t = (phase * ((i % 3) + 1) * 0.35 + i * 0.43) % 9.6;
-        const bus = i < Math.floor(p.transit / 13);
-        const a = i % 2 ? pt(t, 7.12, 2) : pt(3.12, t, 6);
-        ctx.save();
-        ctx.translate(...a);
-        ctx.rotate(i % 2 ? Math.atan(0.49) : -Math.atan(0.49));
-        ctx.fillStyle = bus ? "#356a50" : "#bb8f63";
-        ctx.fillRect(-3, -2, bus ? 12 : 6, 3);
-        ctx.restore();
-      }
-      if (l === "water")
-        for (let i = 0; i < 5; i++) {
-          const a = pt(2 + i * 1.3, 8.8);
-          ctx.beginPath();
-          ctx.arc(...a, 12 + Math.sin(phase + i) * 3, 0, Math.PI * 2);
-          ctx.strokeStyle = "#7aaeb988";
-          ctx.stroke();
-        }
-      frame = requestAnimationFrame(render);
+// Geography remains fixed as policies change: only illustrative overlays change.
+function CityMap({ policy, layer, running, city }) {
+  const host = useRef(null), mapRef = useRef(null), markers = useRef([]);
+  const latest = useRef({ policy, layer, city });
+  latest.current = { policy, layer, city };
+  const [status, setStatus] = useState("loading"), [selected, setSelected] = useState(-1);
+  const [perspective, setPerspective] = useState(true), [tour, setTour] = useState(false);
+  const [fallback, setFallback] = useState(false), [retry, setRetry] = useState(0);
+  const geo = cityGeography[city];
+  const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const focus = (index) => {
+    setSelected(index);
+    const g = cityGeography[latest.current.city];
+    const place = g.landmarks[index];
+    mapRef.current?.flyTo({
+      center: place ? place.coordinates : g.center,
+      zoom: place ? 16 : g.zoom,
+      pitch: perspective ? (place ? 58 : 45) : 0,
+      bearing: perspective ? g.bearing : 0,
+      duration: reduced() ? 0 : 1800,
+    });
+  };
+  const syncOverlays = (map) => {
+    if (!map.getLayer("building-3d")) return;
+    const { policy: p, layer: l, city: key } = latest.current;
+    const height = ["max", 3, ["coalesce", ["get", "height"], ["get", "render_height"], 8]];
+    // Stable illustrative rooftop cohorts; never generate or move building geometry.
+    const cohort = ["match", ["slice", ["coalesce", ["get", "id"], "0"], 0, 1],
+      "0", 3, "1", 9, "2", 16, "3", 22, "4", 28, "5", 34, "6", 41, "7", 47,
+      "8", 53, "9", 59, "a", 66, "b", 72, "c", 78, "d", 84, "e", 91, "f", 97, 50];
+    const solarCohort = ["<", cohort, p.solar];
+    const buildingColor = l === "heat"
+      ? (p.green >= 30 ? "#edbd83" : "#d98561")
+      : l === "energy" ? ["case", solarCohort, "#327d92", "#d1d9d6"]
+      : l === "water" ? "#bbd0d2" : "#d3d8d5";
+    for (const id of ["building-3d", "dense-city-buildings"]) {
+      if (!map.getLayer(id)) continue;
+      map.setPaintProperty(id, "fill-extrusion-color", buildingColor);
+      map.setPaintProperty(id, "fill-extrusion-height", height);
+      map.setPaintProperty(id, "fill-extrusion-opacity", 0.94);
+      map.setLayerZoomRange(id, 13, 24);
     }
-    render();
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    const g = cityGeography[key];
+    const features = g.landmarks.map((place, i) => ({
+      type: "Feature", properties: { kind: place.kind, index: i },
+      geometry: { type: "Point", coordinates: place.coordinates },
+    }));
+    map.getSource("planning-sites")?.setData({ type: "FeatureCollection", features });
+    map.setPaintProperty("planning-halos", "circle-radius", [
+      "interpolate", ["linear"], ["zoom"], 11, 7, 16,
+      l === "water" ? 22 + p.water * 0.4 : l === "heat" ? 18 + p.green * 0.7 : 18 + p.transit * 0.2,
+    ]);
+    map.setPaintProperty("planning-halos", "circle-color", l === "water" ? "#498da4" : l === "heat" ? "#4c985b" : "#4e8e79");
+    map.setPaintProperty("planning-halos", "circle-opacity", l === "overview" ? 0.08 : 0.22);
+    map.setFilter("planning-halos", l === "heat" ? ["==", "kind", "green"] : l === "water"
+      ? ["==", "kind", "water"] : ["==", "kind", "transit"]);
+  };
+  useEffect(() => {
+    if (fallback) return;
+    let disposed = false, timer, observer;
+    setStatus("loading");
+    let map;
+    try {
+      const g = cityGeography[latest.current.city];
+      map = new maplibregl.Map({
+        container: host.current,
+        style: "https://tiles.openfreemap.org/styles/liberty",
+        center: g.center, zoom: g.zoom, pitch: perspective ? 45 : 0, bearing: perspective ? g.bearing : 0,
+        maxPitch: 70, minZoom: 10, maxZoom: 18.5,
+        attributionControl: false,
+      });
+      mapRef.current = map;
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 90 }), "bottom-left");
+      map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+      observer = new ResizeObserver(() => map.resize());
+      observer.observe(host.current);
+      timer = setTimeout(() => { if (!disposed && !map.isStyleLoaded()) setStatus("error"); }, 22000);
+      map.on("load", () => {
+        if (disposed) return;
+        clearTimeout(timer);
+        map.addSource("overture-buildings", {
+          type: "vector", url: buildingArchive, minzoom: 13, maxzoom: 14,
+          attribution: '<a href="https://docs.overturemaps.org/attribution" target="_blank">© Overture Maps Foundation &amp; contributors</a>',
+        });
+        const firstLabel = map.getStyle().layers.find((entry) => entry.type === "symbol")?.id;
+        map.addLayer({
+          id: "dense-city-buildings", type: "fill-extrusion", source: "overture-buildings",
+          "source-layer": "building", minzoom: 13,
+          filter: ["!=", ["get", "is_underground"], true],
+          paint: { "fill-extrusion-color": "#d3d8d5", "fill-extrusion-height": ["coalesce", ["get", "height"], 8],
+            "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0], "fill-extrusion-opacity": 0.94 },
+        }, firstLabel);
+        map.on("click", "dense-city-buildings", (event) => {
+          const properties = event.features?.[0]?.properties;
+          if (!properties) return;
+          const content = document.createElement("div");
+          content.className = "building-inspector";
+          const title = document.createElement("strong");
+          title.textContent = properties["@name"] || "Mapped building footprint";
+          const detail = document.createElement("p");
+          const height = Math.max(3, properties.height == null ? 8 : Number(properties.height));
+          detail.textContent = `Rendered height: ${Number(height).toFixed(0)} m${properties.height ? " (dataset value)" : " (illustrative default)"}. Geometry: ${properties["@geometry_source"] || "Overture Maps"}.`;
+          const note = document.createElement("small");
+          note.textContent = "Policy colors are hypothetical interventions, not this building’s measured performance.";
+          content.append(title, detail, note);
+          new maplibregl.Popup({ maxWidth: "260px" }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
+        });
+        map.on("mouseenter", "dense-city-buildings", () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", "dense-city-buildings", () => { map.getCanvas().style.cursor = ""; });
+        map.on("sourcedata", (event) => {
+          if (event.sourceId === "overture-buildings" && event.sourceDataType === "content" && map.getLayer("building-3d")) {
+            map.setLayoutProperty("building-3d", "visibility", "none");
+          }
+        });
+        map.addSource("planning-sites", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer({ id: "planning-halos", type: "circle", source: "planning-sites", paint: {
+          "circle-radius": 30, "circle-color": "#4e8e79", "circle-opacity": 0.12,
+          "circle-stroke-color": "#579985", "circle-stroke-width": 1, "circle-stroke-opacity": 0.4,
+        } });
+        syncOverlays(map);
+        setStatus("ready");
+      });
+      map.on("error", (event) => {
+        if (!disposed && !map.isStyleLoaded() && /style|worker/i.test(event.error?.message || "")) setStatus("error");
+      });
+    } catch {
+      setStatus("error");
+    }
+    return () => {
+      disposed = true; clearTimeout(timer); observer?.disconnect();
+      markers.current.forEach((m) => m.remove()); markers.current = [];
+      map?.remove(); mapRef.current = null;
+    };
+  }, [fallback, retry]);
+  useEffect(() => {
+    setSelected(-1); setTour(false);
+    if (!mapRef.current) return;
+    const map = mapRef.current, g = cityGeography[city];
+    map.flyTo({ center: g.center, zoom: g.zoom, pitch: perspective ? 45 : 0,
+      bearing: perspective ? g.bearing : 0, duration: reduced() ? 0 : 1600 });
+  }, [city]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || status !== "ready") return;
+    markers.current.forEach((m) => m.remove());
+    markers.current = geo.landmarks.map((place, index) => {
+      const button = document.createElement("button");
+      button.className = `geo-pin ${place.kind}${selected === index ? " selected" : ""}`;
+      button.textContent = String(index + 1);
+      button.title = place.name;
+      button.setAttribute("aria-label", `Explore ${place.name}`);
+      button.addEventListener("click", () => { setTour(false); focus(index); });
+      return new maplibregl.Marker({ element: button }).setLngLat(place.coordinates).addTo(map);
+    });
+    syncOverlays(map);
+  }, [city, status, selected, policy, layer]);
+  useEffect(() => {
+    if (!tour) return;
+    let index = selected;
+    const timer = setInterval(() => {
+      index = (index + 1) % geo.landmarks.length; focus(index);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [tour, city, perspective]);
+  const chosen = geo.landmarks[selected];
+  const fallbackCenter = chosen?.coordinates || geo.center;
+  const fallbackExtent = chosen ? 0.007 : 0.04;
   return (
-    <canvas
-      ref={canvas}
-      aria-label={`Animated schematic urban district of ${cities[city].name}; ${layer} view. Not a geographic map.`}
-    />
+    <div className="geographic-city" aria-label={`Geographic map of ${cities[city].name}`}>
+      {fallback ? <iframe title={`2D street map of ${cities[city].name}`}
+        className="geographic-host" src={`https://www.openstreetmap.org/export/embed.html?bbox=${fallbackCenter[0] - fallbackExtent}%2C${fallbackCenter[1] - fallbackExtent * 0.7}%2C${fallbackCenter[0] + fallbackExtent}%2C${fallbackCenter[1] + fallbackExtent * 0.7}&layer=mapnik`} />
+        : <div className="geographic-host" ref={host} />}
+      {!fallback && status !== "ready" && <div className="map-loading" role="status">
+        <MapPin size={28} />
+        <strong>{status === "error" ? "Map couldn't load on this device" : `Loading real ${cities[city].name} geography…`}</strong>
+        <span>{status === "error" ? "Try again or open the lighter 2D map. Internet is required." : "Street networks · coastlines · dense mapped building footprints"}</span>
+        {status === "error" && <div>
+          <button className="outline" onClick={() => setRetry((v) => v + 1)}>Retry map</button>
+          <button className="run-button" onClick={() => { setTour(false); setFallback(true); }}>Use 2D fallback</button>
+        </div>}
+      </div>}
+      <div className="geo-controls">
+        <button onClick={() => { setTour(false); focus(-1); }}><RotateCcw size={12} /> City overview</button>
+        {!fallback && <>
+          <button className={perspective ? "active" : ""} onClick={() => {
+            const next = !perspective; setPerspective(next);
+            mapRef.current?.easeTo({ pitch: next ? 58 : 0, bearing: next ? geo.bearing : 0, duration: reduced() ? 0 : 900 });
+          }}>{perspective ? "3D buildings" : "2D street map"}</button>
+          <button className={tour ? "active" : ""} onClick={() => { if (!tour) focus(0); setTour(!tour); }}>
+            {tour ? <Pause size={12} /> : <Play size={12} />} {tour ? "Stop tour" : "Landmark tour"}
+          </button>
+        </>}
+        {fallback && <button onClick={() => setFallback(false)}>Retry 3D map</button>}
+      </div>
+      <div className="geo-explorer">
+        <div className="geo-place-title"><span>{chosen ? "EXPLORE THE NEIGHBORHOOD" : "REAL GEOGRAPHY. CONNECTED SYSTEMS."}</span>
+          <strong>{chosen ? chosen.name : geo.identity}</strong></div>
+        <div className="landmark-chips">{geo.landmarks.map((place, index) => (
+          <button key={place.name} className={selected === index ? "active" : ""}
+            onClick={() => { setTour(false); focus(index); }}><span>{index + 1}</span>{place.name}</button>
+        ))}</div>
+        <p>{chosen ? chosen.detail : "Select a landmark to explore its streets. Click a building to inspect it. Drag to pan, scroll to zoom, right-drag to rotate."}</p>
+        <div className="geography-note">OSM streets + Overture footprints · heights mapped/estimated, default 8m if missing · conceptual policy layers
+          {running && <span> · Planning horizon advancing</span>}</div>
+      </div>
+    </div>
   );
 }
 function Trend({ city, policy, year }) {
@@ -339,7 +328,7 @@ function Trend({ city, policy, year }) {
   );
 }
 function App() {
-  const [city, setCity] = useState("pune"),
+  const [city, setCity] = useState("chennai"),
     [policy, setPolicy] = useState({ ...baseline }),
     [year, setYear] = useState(2035),
     [running, setRunning] = useState(false),
@@ -411,13 +400,13 @@ function App() {
   const steps = [
     {
       title: "A city is a connected system.",
-      body: "Start with Pune’s illustrative baseline. Its transport, buildings, green spaces and water systems affect one another.",
+      body: `Start with ${c.name}’s real street map and illustrative baseline. Its transport, buildings, green spaces and water systems affect one another.`,
       policy: baseline,
       layer: "overview",
     },
     {
       title: "Move people, not just cars.",
-      body: "Raise public transport adoption to 80%. Watch the transit corridor appear and commute times improve.",
+      body: "Raise public transport adoption to 80%. Explore the mapped transport hubs and see estimated commute times improve.",
       policy: presets.mobility,
       layer: "overview",
     },
@@ -436,7 +425,6 @@ function App() {
   ];
   const demoStep = (i) => {
     setDemo(i);
-    setCity("pune");
     setYear(2035);
     setPolicy({ ...steps[i].policy });
     setLayer(steps[i].layer);
@@ -594,7 +582,7 @@ function App() {
                 <ChevronDown size={14} />
                 <span className="divider" />
                 <span className="district-label">
-                  Urban district simulation
+                  Geographic city simulation
                 </span>
               </div>
               <div className="toolbar">
@@ -736,7 +724,7 @@ function App() {
               <section className="city-panel">
                 <div className="city-top">
                   <div>
-                    <span className="section-label">THE CITY, REIMAGINED</span>
+                    <span className="section-label">REAL CITY · FUTURE POSSIBILITIES</span>
                     <h2>
                       {c.name} <span>· {year}</span>
                     </h2>
@@ -780,15 +768,12 @@ function App() {
                     <span className="live-dot" />{" "}
                     {running ? "SIMULATION RUNNING" : "SCENARIO PREVIEW"}
                   </div>
-                  <CityCanvas
+                  <CityMap
                     city={city}
                     policy={policy}
                     layer={layer}
                     running={running}
                   />
-                  <div className="compass">
-                    N<MoveUpRight size={19} />
-                  </div>
                   <div className="map-legend">
                     {layer === "heat" ? (
                       <>
@@ -850,7 +835,7 @@ function App() {
                     )}
                   </div>
                   <span className="schematic">
-                    CONCEPTUAL DISTRICT · NOT TO SCALE
+                    REAL MAP · ILLUSTRATIVE POLICIES
                   </span>
                 </div>
                 <div className="timeline">
@@ -1147,9 +1132,14 @@ function App() {
                   and consultation with residents.
                 </p>
                 <p>
-                  The animated district is schematic. Moving vehicles are visual
-                  agents, not simulated congestion. Layers illustrate
-                  interventions, not measured spatial conditions.
+                  Streets, water bodies, parks and building footprints come from
+                  OpenStreetMap via OpenFreeMap. Dense building footprints come from
+                  Overture Maps (September 2026 release), including satellite-derived
+                  footprints. Heights use mapped or dataset-estimated values, with an
+                  illustrative 8 m default where missing. Colored
+                  policy overlays illustrate scenarios, not measured spatial
+                  conditions or exact infrastructure proposals. Map tiles require
+                  internet access; this is not a live city digital twin.
                 </p>
               </article>
             </div>
@@ -1271,7 +1261,7 @@ function App() {
                   {c.name} · {year}
                 </h2>
                 <div className="expanded-city">
-                  <CityCanvas
+                  <CityMap
                     policy={policy}
                     layer={layer}
                     running={running}
@@ -1279,7 +1269,7 @@ function App() {
                   />
                 </div>
                 <p className="muted">
-                  Schematic visualisation · {policy.transit}% public transit ·{" "}
+                  Real geography / illustrative scenario · {policy.transit}% public transit ·{" "}
                   {policy.green}% green cover · {policy.solar}% solar rooftops
                 </p>
               </>
