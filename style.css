@@ -509,9 +509,157 @@ h1 > span {
   border-color: #e4eadd;
   color: #657958;
 }
+.geographic-city {
+  position: absolute;
+  inset: 0;
+  background: #e9efea;
+}
+.geographic-host {
+  position: absolute;
+  inset: 0 0 154px;
+  width: 100%;
+  height: calc(100% - 154px);
+  border: 0;
+}
+.geo-controls {
+  position: absolute;
+  z-index: 2;
+  top: 49px;
+  left: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: calc(100% - 75px);
+}
+.geo-controls button {
+  padding: 8px 10px;
+  border-radius: 5px;
+  background: #fffffff2;
+  box-shadow: 0 2px 9px #203b3020;
+  font-size: 10px;
+  border: 1px solid #d9e3da;
+}
+.geo-controls button.active {
+  color: #fff;
+  background: #35684f;
+  border-color: #35684f;
+}
+.geo-explorer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 154px;
+  padding: 13px 20px 10px;
+  background: #fbfdfb;
+  border-top: 1px solid #dce5df;
+  overflow-y: auto;
+}
+.geo-place-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.geo-place-title > span {
+  font-size: 7px;
+  letter-spacing: 1.2px;
+  color: #789380;
+}
+.geo-place-title strong {
+  font-size: 12px;
+  font-weight: 650;
+  color: #365447;
+}
+.landmark-chips {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.landmark-chips button {
+  white-space: nowrap;
+  font-size: 9px;
+  padding: 5px 8px;
+  border: 1px solid #dbe5dd;
+  border-radius: 20px;
+  background: #fff;
+}
+.landmark-chips button > span {
+  color: #6c8e77;
+  font-weight: 700;
+}
+.landmark-chips button.active {
+  background: #e1eee6;
+  border-color: #80a08b;
+  color: #2f5c46;
+}
+.geo-explorer p {
+  font-size: 10px;
+  color: #77867d;
+  line-height: 1.5;
+  margin: 8px 0 5px;
+}
+.geography-note {
+  font-size: 8px;
+  color: #95a398;
+  line-height: 1.4;
+}
+.geo-pin {
+  width: 26px;
+  height: 26px;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px #17352a55;
+  background: #426a56;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0;
+}
+.geo-pin.water { background: #498ca6; }
+.geo-pin.green { background: #6b8e47; }
+.geo-pin.heritage { background: #bc8751; }
+.geo-pin.transit { background: #4e7190; }
+.geo-pin.selected { outline: 4px solid #ffffffa8; }
+.geo-pin:hover { background: #263e31; }
+.map-loading {
+  position: absolute;
+  inset: 0 0 154px;
+  z-index: 3;
+  background: #f0f5f1f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px;
+  text-align: center;
+  color: #62836d;
+}
+.map-loading strong { font-size: 15px; }
+.map-loading > span { font-size: 11px; }
+.map-loading > div { display: flex; gap: 8px; }
+.city-stage .maplibregl-ctrl-attrib {
+  font-size: 9px;
+  background: #ffffffe6;
+}
+.city-stage .maplibregl-ctrl-scale { font-size: 9px; }
+.city-stage .maplibregl-ctrl-top-right { top: 9px; right: 6px; }
+.expanded-city { min-height: 630px; position: relative; }
+@media (max-width: 650px) {
+  .geo-explorer { height: 177px; padding: 12px 14px; }
+  .geographic-host { bottom: 177px; height: calc(100% - 177px); }
+  .map-loading { bottom: 177px; }
+  .geo-controls { left: 12px; }
+  .geo-controls button { font-size: 9px; padding: 7px; }
+  .geo-place-title strong { font-size: 11px; }
+  .city-stage .schematic { display: none; }
+  .city-stage .map-legend { bottom: 211px; left: 12px; font-size: 7px; }
+}
 .city-stage {
   flex: 1;
-  min-height: 350px;
+  min-height: 600px;
   background: radial-gradient(ellipse at center, #f3f5ed 0, #fafbf7 65%);
   position: relative;
   overflow: hidden;
@@ -551,8 +699,13 @@ h1 > span {
 }
 .map-legend {
   position: absolute;
-  bottom: 24px;
-  left: 24px;
+  bottom: 187px;
+  left: 20px;
+  padding: 7px 9px;
+  background: #fffffff0;
+  border: 1px solid #dfe6dd;
+  border-radius: 5px;
+  pointer-events: none;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -570,8 +723,12 @@ h1 > span {
 }
 .schematic {
   position: absolute;
-  bottom: 24px;
-  right: 23px;
+  bottom: 189px;
+  right: 20px;
+  background: #fffffff0;
+  padding: 7px;
+  border-radius: 4px;
+  pointer-events: none;
   font-size: 6px;
   letter-spacing: 1px;
   color: #b2bba3;

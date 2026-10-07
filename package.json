@@ -10,9 +10,11 @@
     "test": "node --test model.test.js"
   },
   "dependencies": {
+    "lucide-react": "^0.468.0",
+    "maplibre-gl": "^6.13.0",
+    "pmtiles": "^4.5.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "lucide-react": "^0.468.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "vite": "^6.0.0"

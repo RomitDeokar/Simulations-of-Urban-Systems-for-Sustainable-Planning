@@ -1,4 +1,17 @@
 export const cities = {
+  chennai: {
+    name: "Chennai",
+    state: "Tamil Nadu",
+    pop: "6.7M",
+    area: "426",
+    context:
+      "A coastal metropolis on the Bay of Bengal. Connect metro mobility, wetland protection and rainwater capture to tackle heat and monsoon vulnerability.",
+    carbon: 3.3,
+    commute: 46,
+    heat: 4.3,
+    water: 35,
+    demand: 1.024,
+  },
   pune: {
     name: "Pune",
     state: "Maharashtra",
@@ -50,6 +63,65 @@ export const cities = {
     heat: 3.8,
     water: 22,
     demand: 1.018,
+  },
+};
+// Curated landmark locations, not simulation measurements. Map geometry is from OSM.
+export const cityGeography = {
+  chennai: {
+    center: [80.274, 13.048], zoom: 13.6, bearing: -8,
+    identity: "Bay of Bengal · Adyar & Cooum rivers · Coastal metropolis",
+    landmarks: [
+      { name: "Marina Beach", coordinates: [80.2809, 13.0500], kind: "water", detail: "Recognizable eastern shoreline along the Bay of Bengal. Explore coastal resilience and stormwater capture." },
+      { name: "Chennai Central", coordinates: [80.2755, 13.0827], kind: "transit", detail: "Historic railway gateway and metro interchange. A focal point for public transport-led planning." },
+      { name: "Mylapore", coordinates: [80.2698, 13.0338], kind: "heritage", detail: "A historic, fine-grained neighborhood around the Kapaleeshwarar Temple, with compact streets and mixed uses." },
+      { name: "Guindy National Park", coordinates: [80.2377, 13.0067], kind: "green", detail: "An urban forest and important ecological refuge. Green-cover policies complement the existing landscape." },
+      { name: "T. Nagar", coordinates: [80.2337, 13.0418], kind: "district", detail: "A dense shopping and residential district. Explore shaded streets, solar rooftops and better connectivity." },
+      { name: "Adyar Estuary", coordinates: [80.2722, 13.0167], kind: "water", detail: "Where the Adyar River meets the coast. Wetland protection and flood resilience are connected systems." },
+    ],
+  },
+  pune: {
+    center: [73.858, 18.523], zoom: 13.4, bearing: -22,
+    identity: "Mutha River · Historic peths · Education & technology hub",
+    landmarks: [
+      { name: "Shaniwar Wada", coordinates: [73.8553, 18.5195], kind: "heritage", detail: "Historic heart of Pune, surrounded by compact urban blocks and the city's traditional peth neighborhoods." },
+      { name: "Pune Junction", coordinates: [73.8743, 18.5289], kind: "transit", detail: "Railway hub linking the old city with regional mobility networks." },
+      { name: "Saras Baug", coordinates: [73.8524, 18.5011], kind: "green", detail: "A central park and temple landscape providing shade and public open space." },
+      { name: "Deccan Gymkhana", coordinates: [73.8418, 18.5164], kind: "district", detail: "A mixed-use district beside the Mutha River with education, commerce and transit access." },
+      { name: "Mutha Riverfront", coordinates: [73.8550, 18.5265], kind: "water", detail: "The city's river corridor connects drainage, ecology and public-space planning." },
+    ],
+  },
+  bengaluru: {
+    center: [77.591, 12.973], zoom: 13.4, bearing: -15,
+    identity: "Garden city · Connected lakes · Technology capital",
+    landmarks: [
+      { name: "Cubbon Park", coordinates: [77.5920, 12.9763], kind: "green", detail: "A major green lung at the center of the city, surrounded by civic and commercial districts." },
+      { name: "Majestic", coordinates: [77.5713, 12.9767], kind: "transit", detail: "An important metro, bus and railway interchange for citywide mobility." },
+      { name: "Vidhana Soudha", coordinates: [77.5907, 12.9797], kind: "heritage", detail: "The landmark legislative complex anchors Bengaluru's civic district." },
+      { name: "Lalbagh", coordinates: [77.5846, 12.9507], kind: "green", detail: "Historic botanical gardens demonstrate the value of established canopy and water bodies." },
+      { name: "Ulsoor Lake", coordinates: [77.6191, 12.9815], kind: "water", detail: "A central lake illustrating the link between water storage, urban ecology and recreation." },
+    ],
+  },
+  delhi: {
+    center: [77.215, 28.622], zoom: 13.1, bearing: -20,
+    identity: "Yamuna River · Civic avenues · Historic capital region",
+    landmarks: [
+      { name: "India Gate", coordinates: [77.2295, 28.6129], kind: "heritage", detail: "A landmark on the capital's ceremonial avenue, with a recognizable planned street network." },
+      { name: "Connaught Place", coordinates: [77.2195, 28.6315], kind: "district", detail: "A distinctive concentric commercial district and major transit destination." },
+      { name: "New Delhi Station", coordinates: [77.2194, 28.6429], kind: "transit", detail: "A major regional railway hub close to the historic city." },
+      { name: "Lodhi Garden", coordinates: [77.2200, 28.5933], kind: "green", detail: "Historic gardens combine shade, heritage and public recreation." },
+      { name: "Yamuna River", coordinates: [77.2630, 28.6270], kind: "water", detail: "The river and its floodplain are crucial to ecology and flood-sensitive urban planning." },
+    ],
+  },
+  mumbai: {
+    center: [72.832, 18.947], zoom: 13.4, bearing: -25,
+    identity: "Arabian Sea · Island city · Rail-oriented urban fabric",
+    landmarks: [
+      { name: "Marine Drive", coordinates: [72.8237, 18.9432], kind: "water", detail: "A recognizable curved waterfront on the Arabian Sea, connecting dense neighborhoods with the coast." },
+      { name: "CSMT", coordinates: [72.8356, 18.9402], kind: "transit", detail: "Historic railway terminus and an anchor of Mumbai's suburban transport system." },
+      { name: "Gateway of India", coordinates: [72.8347, 18.9220], kind: "heritage", detail: "A landmark waterfront precinct in the compact historic city." },
+      { name: "Oval Maidan", coordinates: [72.8304, 18.9284], kind: "green", detail: "A large open ground surrounded by the city's historic architectural district." },
+      { name: "Girgaon", coordinates: [72.8270, 18.9570], kind: "district", detail: "A dense mixed-use neighborhood with small blocks and narrow streets, distinct from a generic grid." },
+    ],
   },
 };
 export const baseline = { transit: 25, green: 15, solar: 10, water: 15 };

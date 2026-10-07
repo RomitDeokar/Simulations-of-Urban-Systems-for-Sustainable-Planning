@@ -1,6 +1,36 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cities, baseline, presets, simulate } from "./model.js";
+import { cities, cityGeography, baseline, presets, simulate } from "./model.js";
+test("Chennai is a complete coastal city scenario", () => {
+  assert.equal(cities.chennai.name, "Chennai");
+  assert.equal(cities.chennai.state, "Tamil Nadu");
+  assert.match(cityGeography.chennai.identity, /Bay of Bengal/);
+  for (const name of ["Marina Beach", "Chennai Central", "Mylapore", "Guindy National Park", "T. Nagar", "Adyar Estuary"])
+    assert.ok(cityGeography.chennai.landmarks.some((place) => place.name === name));
+});
+test("each city has distinct geographic coordinates and valid landmark coverage", () => {
+  assert.deepEqual(Object.keys(cityGeography).sort(), Object.keys(cities).sort());
+  const centers = new Set();
+  for (const [key, geo] of Object.entries(cityGeography)) {
+    centers.add(geo.center.join(","));
+    assert.ok(geo.landmarks.length >= 5, key);
+    assert.ok(geo.zoom >= 10 && geo.zoom <= 18.5);
+    assert.equal(new Set(geo.landmarks.map((place) => place.name)).size, geo.landmarks.length);
+    for (const coordinates of [geo.center, ...geo.landmarks.map((place) => place.coordinates)]) {
+      assert.equal(coordinates.length, 2);
+      assert.ok(coordinates.every(Number.isFinite));
+      assert.ok(coordinates[0] >= 67 && coordinates[0] <= 98);
+      assert.ok(coordinates[1] >= 6 && coordinates[1] <= 38);
+    }
+  }
+  assert.equal(centers.size, Object.keys(cities).length);
+});
+test("planning changes never alter real city geometry", () => {
+  const before = JSON.stringify(cityGeography);
+  for (const city of Object.keys(cities))
+    for (const policy of [baseline, ...Object.values(presets)]) simulate(city, policy, 2040);
+  assert.equal(JSON.stringify(cityGeography), before);
+});
 test("all cities reproduce baseline in 2026", () => {
   for (const [key, c] of Object.entries(cities)) {
     const m = simulate(key, baseline, 2026);
